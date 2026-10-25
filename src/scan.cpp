@@ -331,6 +331,14 @@ ScanReturn ScanJob::Track::scan_loop(DecoderParams &dp,  ProgressBar *progress_b
         av_packet_unref(packet.get());
     }
 
+    // Drain the samples still buffered in the resampler when changing sample rate
+    if (dp.swr && buffer) {
+        int capacity = static_cast<int>(buffer_size / (dp.nb_channels * av_get_bytes_per_sample(dp.output_format)));
+        int nb_samples = swr_convert(dp.swr, swr_out_data, capacity, nullptr, 0);
+        if (nb_samples > 0)
+            ebur128_add_frames(ebur128.get(), reinterpret_cast<T*>(swr_out_data[0]), static_cast<size_t>(nb_samples));
+    }
+
     // Make sure the progress bar finishes at 100%
     if (progress_bar)
         progress_bar->complete();
