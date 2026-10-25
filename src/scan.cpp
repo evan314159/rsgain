@@ -288,19 +288,17 @@ ScanReturn ScanJob::Track::scan_loop(DecoderParams &dp,  ProgressBar *progress_b
 #endif
                         // Convert audio format with libswresample if necessary
                         if (dp.swr) {
-                            size_t out_size = static_cast<size_t>(
-                                av_samples_get_buffer_size(nullptr,
-                                    dp.nb_channels,
-                                    frame->nb_samples,
-                                    dp.output_format,
-                                    0
-                                )
+                            int out_size = av_samples_get_buffer_size(nullptr,
+                                dp.nb_channels,
+                                frame->nb_samples,
+                                dp.output_format,
+                                0
                             );
                             if (out_size < 0) {
                                 output_error("Could not calculate output buffer size");
                                 return ScanReturn::ERR;
                             }
-                            if (out_size > buffer_size) {
+                            if (static_cast<size_t>(out_size) > buffer_size) {
                                 buffer = std::make_unique_for_overwrite<uint8_t[]>(out_size);
                                 buffer_size = out_size;
                                 swr_out_data[0] = buffer.get();
